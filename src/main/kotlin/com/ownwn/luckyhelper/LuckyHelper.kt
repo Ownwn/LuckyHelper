@@ -1,8 +1,8 @@
 package com.ownwn.luckyhelper
 
-import cc.polyfrost.oneconfig.events.EventManager
 import cc.polyfrost.oneconfig.utils.commands.CommandManager
 import com.ownwn.luckyhelper.command.LuckyCommand
+import net.minecraftforge.common.MinecraftForge
 import net.minecraftforge.fml.common.Mod
 import net.minecraftforge.fml.common.event.FMLInitializationEvent
 
@@ -20,7 +20,6 @@ object LuckyHelper {
     @Mod.EventHandler
     fun onInit(event: FMLInitializationEvent?) {
         CommandManager.INSTANCE.registerCommand(LuckyCommand)
-
-        EventManager.INSTANCE.register(BadItemWarn)
+        MinecraftForge.EVENT_BUS.register(BadItemWarn)
     }
 }
