@@ -6,6 +6,8 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.Gui
 import net.minecraft.client.gui.ScaledResolution
 import net.minecraft.client.gui.inventory.GuiChest
+import net.minecraft.client.gui.inventory.GuiInventory
+import net.minecraft.inventory.Slot
 import net.minecraftforge.client.event.GuiScreenEvent
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent
 import org.lwjgl.opengl.GL11
@@ -18,24 +20,43 @@ object BadItemWarn {
     @SubscribeEvent
     fun onRenderContainer(event: GuiScreenEvent.BackgroundDrawnEvent) {
         if (!isInLuckyBlock()) return
-        if (event.gui !is GuiChest) return
-        if (Minecraft.getMinecraft().currentScreen !is GuiChest) return
 
-        val slots = (event.gui as GuiChest).inventorySlots.inventorySlots
-        val doubleChest = if (slots.size == 90) true else if (slots.size == 63) false else return
+        if (event.gui !is GuiInventory && event.gui !is GuiChest) return
 
-        for (slot in slots) {
-            if (slot.stack == null) continue
-            highlightSlot(slot.xDisplayPosition, slot.yDisplayPosition, doubleChest) // counts player + chest slots
+        val currentScreen = Minecraft.getMinecraft().currentScreen
 
+
+        if (currentScreen is GuiInventory) { // thx kotlin inferrer
+            highlightSlots(currentScreen.inventorySlots.inventorySlots)
+        } else if (currentScreen is GuiChest) {
+            highlightSlots(currentScreen.inventorySlots.inventorySlots)
+        }
+
+
+    }
+
+    private fun highlightSlots(slots: List<Slot>) {
+        val yOffset = when (slots.size) {
+            90 -> 222 // double chest
+            63 -> 168 // single chest
+            45 -> 166 // player inventory
+            else -> return
+        }
+        for (slot in slots.stream().filter(this::shouldHighlight)) {
+            highlightSlot(slot.xDisplayPosition, slot.yDisplayPosition, yOffset)
         }
     }
 
+    private fun shouldHighlight(slot: Slot): Boolean {
+        val stack = slot.stack ?: return false
+        return stack.displayName?.contains(Regex("Lit|Hot|Disco|Iron")) ?: false
+    }
+
     // https://github.com/RabbitType99/NecromancyBuyHelper/blob/master/src/main/java/dev/RabbitType99/NecromancyBuyHelper/NecromancyBuyHelper.java
-    private fun highlightSlot(x: Int, y: Int, doubleChest: Boolean) {
+    private fun highlightSlot(x: Int, y: Int, yOffset: Int) {
         val sr = ScaledResolution(Minecraft.getMinecraft())
         val xInGui = (sr.scaledWidth - 176) / 2 + x
-        val yInGui = (sr.scaledHeight - if (doubleChest) 222 else 168) / 2 + y
+        val yInGui = (sr.scaledHeight - yOffset) / 2 + y
 
         GL11.glTranslated(0.0, 0.0, 1.0)
         Gui.drawRect(xInGui, yInGui, xInGui + 16, yInGui + 16, Color.RED.rgb)
